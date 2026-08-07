@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票看板平台 · 投资决策辅助</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js"></script>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-left">
+            <h1 class="logo">📊 股票看板</h1>
+            <span class="subtitle">投资决策辅助平台</span>
+        </div>
+        <div class="topbar-right">
+            <button id="refreshBtn" class="btn btn-primary">🔄 刷新</button>
+            <button id="settingsBtn" class="btn btn-secondary">⚙️ 设置</button>
+            <button id="manageBtn" class="btn btn-secondary">📁 股票管理</button>
+            <span id="refreshStatus" class="refresh-status"></span>
+        </div>
+    </header>
+
+    <div class="app-layout">
+        <!-- 左侧导航 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">📊 功能导航</div>
+            <nav class="sidebar-nav" id="sidebarNav">
+                <a class="nav-item active" data-panel="quotes">📈 实时行情</a>
+                <a class="nav-item" data-panel="kline">🕯️ K线全景</a>
+                <a class="nav-item" data-panel="news">📰 新闻快讯</a>
+                <a class="nav-item" data-panel="sentiment">😊 情绪分析</a>
+                <a class="nav-item" data-panel="wyckoff">🔬 威科夫分析</a>
+                <a class="nav-item" data-panel="tradeplan">📋 交易计划</a>
+            </nav>
+        </aside>
+
+        <!-- 右侧主内容 -->
+        <main class="main-content" id="mainContent">
+            <!-- 板块1: 全部股票实时行情 -->
+            <section class="panel" data-panel="quotes">
+                <div class="panel-header">
+                    <h2>📈 关注股票 · 实时行情</h2>
+                    <span id="quoteUpdateTime" class="update-time"></span>
+                </div>
+                <div id="quotesGrid" class="quotes-grid">
+                    <div class="loading-placeholder">加载中...</div>
+                </div>
+            </section>
+
+            <!-- 板块2: 股票池K线全景 -->
+            <section class="panel" data-panel="kline">
+                <div class="panel-header">
+                    <h2>🕯️ 股票池 · K线全景（点击查看详情）</h2>
+                    <div class="kline-period-tabs">
+                        <button class="tab-btn active" data-period="daily">日K</button>
+                        <button class="tab-btn" data-period="weekly">周K</button>
+                        <button class="tab-btn" data-period="monthly">月K</button>
+                    </div>
+                </div>
+                <div id="klineGrid" class="kline-grid">
+                    <div class="loading-placeholder" style="grid-column:1/-1;">加载K线数据...</div>
+                </div>
+            </section>
+
+            <!-- 板块3: 选中股票详情 -->
+            <section class="panel hidden" id="stockDetailPanel" data-panel="detail">
+                <div class="panel-header">
+                    <h2>📊 <span id="detailStockName">股票详情</span></h2>
+                </div>
+                <div class="detail-grid">
+                    <div class="chart-box" style="grid-column:1/-1;">
+                        <h3 class="chart-title">K线图 · 日K</h3>
+                        <div id="klineChart" class="chart"></div>
+                    </div>
+                </div>
+                <div class="finance-row" id="financeRow"></div>
+            </section>
+
+            <!-- 板块4: 新闻快讯 -->
+            <section class="panel" data-panel="news">
+                <div class="panel-header">
+                    <h2>📰 新闻快讯 · 股票池聚合</h2>
+                    <div class="news-controls">
+                        <label>展示数量:
+                            <select id="topNSelect">
+                                <option value="10">Top 10</option>
+                                <option value="15" selected>Top 15</option>
+                                <option value="20">Top 20</option>
+                                <option value="30">Top 30</option>
+                                <option value="50">Top 50</option>
+                            </select>
+                        </label>
+                        <span id="newsUpdateTime" class="update-time"></span>
+                    </div>
+                </div>
+                <div id="newsFilter" class="news-stock-filter"></div>
+                <div id="newsList" class="news-list">
+                    <div class="loading-placeholder">点击"刷新"获取最新资讯</div>
+                </div>
+            </section>
+
+            <!-- 板块5: 投资情绪 -->
+            <section class="panel" data-panel="sentiment">
+                <div class="panel-header">
+                    <h2>😊 投资情绪分析 · NLP</h2>
+                    <div class="sentiment-controls">
+                        <button id="analyzeBtn" class="btn btn-sm btn-secondary">立即分析</button>
+                        <span id="sentimentUpdateTime" class="update-time"></span>
+                    </div>
+                </div>
+                <div class="sentiment-overview" id="sentimentOverview" style="margin-bottom:18px;">
+                    <div class="loading-placeholder">点击"立即分析"开始采集股吧+雪球的最新投资者评论</div>
+                </div>
+                <div class="sentiment-grid">
+                    <div class="chart-box">
+                        <h3 class="chart-title">情绪温度计 <small>(范围: -100 看空 ~ +100 看多)</small></h3>
+                        <div id="sentimentGauge" class="chart"></div>
+                    </div>
+                    <div class="chart-box">
+                        <h3 class="chart-title">多空分布 <small>(条数 / 比例)</small></h3>
+                        <div id="sentimentPie" class="chart"></div>
+                    </div>
+                    <div class="chart-box">
+                        <h3 class="chart-title">情绪关键词词云</h3>
+                        <div id="sentimentWordCloud" class="chart"></div>
+                    </div>
+                    <div class="chart-box">
+                        <h3 class="chart-title">股票池情绪对比 <small>(柱状: 综合分 / 高低即强弱)</small></h3>
+                        <div id="sentimentCompare" class="chart"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 板块6: 威科夫操盘分析 -->
+            <section class="panel" data-panel="wyckoff">
+                <div class="panel-header">
+                    <h2>🔬 威科夫操盘分析 · 主力资金行为</h2>
+                    <span id="wyckoffUpdateTime" class="update-time"></span>
+                </div>
+                <div id="wyckoffGrid" class="wyckoff-grid">
+                    <div class="loading-placeholder" style="grid-column:1/-1;">加载威科夫分析中...</div>
+                </div>
+            </section>
+
+            <!-- 板块7: 交易计划 -->
+            <section class="panel" data-panel="tradeplan">
+                <div class="panel-header">
+                    <h2>📋 交易计划 · 撤退纪律</h2>
+                    <span id="tradePlanUpdateTime" class="update-time"></span>
+                </div>
+                <div id="tradePlanGrid" class="trade-plan-grid">
+                    <div class="loading-placeholder" style="grid-column:1/-1;">加载交易计划中...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="settingsModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ 设置</h3>
+                <button class="modal-close" onclick="document.getElementById('settingsModal').style.display='none'">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>新闻自动刷新间隔（分钟）</label>
+                    <input type="number" id="intervalInput" min="1" max="1440" value="5">
+                    <small>默认每 5 分钟自动刷新一次新闻</small>
+                </div>
+                <div class="form-group">
+                    <label>每只股票展示资讯数量</label>
+                    <select id="topNInput">
+                        <option value="10">Top 10</option>
+                        <option value="15">Top 15</option>
+                        <option value="20">Top 20</option>
+                        <option value="30">Top 30</option>
+                        <option value="50">Top 50</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="document.getElementById('settingsModal').style.display='none'">取消</button>
+                <button class="btn btn-primary" id="saveSettingsBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="manageModal" class="modal" style="display:none;">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>📁 股票管理</h3>
+                <button class="modal-close" onclick="document.getElementById('manageModal').style.display='none'">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <input type="text" id="newStockCode" placeholder="股票代码（6位数字）" class="input-code">
+                    <input type="text" id="newStockName" placeholder="股票名称（留空自动获取）" class="input-name">
+                    <button class="btn btn-primary" id="addStockBtn">添加</button>
+                </div>
+                <div id="stockManageList" class="stock-manage-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <span>股票看板平台 · 数据仅供参考，不构成投资建议</span>
+        <span id="serverInfo"></span>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
