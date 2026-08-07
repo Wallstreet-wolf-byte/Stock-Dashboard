@@ -1,7 +1,7 @@
 /* ===== 股票看板平台 · 前端逻辑 · 亮色主题 ===== */
 
 // 后端 API 地址 —— 部署时修改此处指向你的后端
-const API = '/api';
+const API = 'https://industrious-fulfillment-production-f714.up.railway.app/api';
 
 let currentStock = null;
 let currentPeriod = 'daily';
