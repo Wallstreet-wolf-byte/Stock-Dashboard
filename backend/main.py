@@ -327,12 +327,16 @@ def api_health():
 
 # ---------------- 静态前端 ----------------
 
-app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+import os as _os
 
+if FRONTEND_DIR and _os.path.isdir(FRONTEND_DIR):
+    app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
-@app.get("/")
-def index():
-    return FileResponse(f"{FRONTEND_DIR}/index.html")
+    @app.get("/")
+    def index():
+        return FileResponse(f"{FRONTEND_DIR}/index.html")
+else:
+    print(f"[app] 警告: 前端目录未找到，跳过静态文件挂载（仅提供 API 服务）")
 
 
 if __name__ == "__main__":

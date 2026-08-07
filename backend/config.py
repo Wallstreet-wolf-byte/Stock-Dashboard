@@ -3,12 +3,22 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
-FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 
-# Render 部署时使用 /tmp 存放数据
-if os.environ.get("RENDER"):
+# 智能检测前端目录：尝试多个可能的路径
+_candidates = [
+    os.path.join(BASE_DIR, "frontend"),          # 标准结构: backend/ + frontend/
+    BASE_DIR,                                     # 前端在项目根目录
+    os.path.join(os.path.dirname(BASE_DIR), "frontend"),  # 备选
+]
+FRONTEND_DIR = None
+for _d in _candidates:
+    if os.path.isdir(_d) or os.path.isfile(os.path.join(_d, "index.html")):
+        FRONTEND_DIR = _d
+        break
+
+# 云端部署时使用 /tmp 存放数据
+if os.environ.get("RENDER") or os.environ.get("RAILWAY_ENVIRONMENT"):
     DATA_DIR = "/tmp/data"
-    FRONTEND_DIR = BASE_DIR  # 前端文件在项目根目录
 
 DB_PATH = os.path.join(DATA_DIR, "stocks.db")
 
