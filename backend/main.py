@@ -3,6 +3,7 @@ import re
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -49,6 +50,15 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="股票看板平台", lifespan=lifespan)
+
+# 允许前端跨域访问
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # ---------------- 数据模型 ----------------
